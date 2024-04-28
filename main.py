@@ -1,3 +1,4 @@
+import sys
 import threading
 import time
 import requests
@@ -81,20 +82,27 @@ def fetch_telemetry():
         }
     except requests.RequestException as e:
         print(f"Failed to fetch data: {e}")
+    except Exception as e:
+        print(f"Unexpected error, launch the game maybe? (probably) {e}")
+        time.sleep(1)
 
 
 @monitor_frequency
 def send_udp_data():
     global sock
     if telemetry_state:
-        # Define the format to pack the data: float values and integers
-        # This assumes all values are being sent as floats for simplicity
-        data_format = 'f' * len(telemetry_state.values())  # 'f' for float, repeat for each value
-        packed_data = struct.pack(data_format, *telemetry_state.values())
         try:
-            sock.sendto(packed_data, (UDP_IP, UDP_PORT))
-        except BlockingIOError:
-            pass  # Handle case where the socket is not ready to send data
+            # Define the format to pack the data: float values and integers
+            # This assumes all values are being sent as floats for simplicity
+            data_format = 'f' * len(telemetry_state.values())  # 'f' for float, repeat for each value
+            packed_data = struct.pack(data_format, *telemetry_state.values())
+            try:
+                sock.sendto(packed_data, (UDP_IP, UDP_PORT))
+            except BlockingIOError:
+                pass  # Handle case where the socket is not ready to send data
+        except Exception as e:
+            print(f"Unexpected error, couldn't send data to rack module... {e}")
+            time.sleep(.25)
 
 
 def main():
